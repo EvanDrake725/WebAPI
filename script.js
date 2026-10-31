@@ -36,54 +36,27 @@ const fetchCharacters = async (query) => {
             return;
         }
         const pageParams = new URLSearchParams({
-            action: "query",
-            titles: character.title,
-            prop: "extracts",
-            exintro: "true",
-            explaintext: "true",
-            format: "json",
-            origin: "*"
-        });
-        const pageResponse = await fetch(`${API_URL}?${pageParams}`);
-        const pageData = await pageResponse.json();
-        if (!pageResponse.ok) {
-            throw new Error("Unable to retrieve character information.");
-        }
-        const page = Object.values(pageData.query.pages)[0];
-        const wikitextParams = new URLSearchParams({
             action: "parse",
             page: character.title,
             prop: "wikitext",
             format: "json",
             origin: "*"
         });
-        const wikitextResponse = await fetch(
-            `${API_URL}?${wikitextParams}`
-        );
-        const wikitextData = await wikitextResponse.json();
-        if (!wikitextResponse.ok || !wikitextData.parse) {
+        const pageResponse = await fetch(`${API_URL}?${pageParams}`);
+        const pageData = await pageResponse.json();
+        if (!pageResponse.ok || !pageData.parse) {
             throw new Error("Unable to retrieve character portrait.");
         }
-        const wikitext = wikitextData.parse.wikitext["*"];
-        const imageMatch = wikitext.match(
-            /^\s*\|image\s*=\s*([^\n|]+)/im
-        );
-        let imageUrl = "";
-        if (imageMatch) {
-            const imageName = imageMatch[1].trim();
-            imageUrl =
-                "https://www.xenoserieswiki.org/wiki/Special:FilePath/" +
-                encodeURIComponent(imageName);
-        }
+        const wikitext = pageData.parse.wikitext["*"];
+        const imageMatch = wikitext.match(/^\s*\|image\s*=\s*([^\n|]+)/im);
         characterContainer.textContent = "";
         const characterDiv = document.createElement("div");
         characterDiv.classList.add("character");
-        if (imageUrl) {
+        if (imageMatch) {
             const image = document.createElement("img");
-            image.src = imageUrl;
+            image.src = "https://www.xenoserieswiki.org/wiki/Special:FilePath/" + encodeURIComponent(imageMatch[1].trim());
             image.alt = character.title;
             image.classList.add("character-image");
-
             characterDiv.appendChild(image);
         }
         const title = document.createElement("h3");
