@@ -1,58 +1,135 @@
- const API_URL = "https://www.xenoserieswiki.org/w/api.php?action=parse&page=Rex&prop=wikitext&format=json";
- const searchBox = document.getElementById("search-box");
- const searchButton = document.getElementById("search-button");
- const characterContainer = document.getElementById("characters");
 
- const showMessage = (text) => {
- const heading = document.createElement("h2");
- heading.textContent = text;
- characterContainer.textContent = "";
- characterContainer.appendChild(heading);
- };
+const API_URL = "https://www.xenoserieswiki.org/w/api.php";
 
- const fetchCharacters = async (query) => {
- showMessage("Fetching Characters...");
- try {
- const response = await fetch(API_URL + encodeURIComponent(query));
- const data = await response.json();
+const searchBox = document.getElementById("search-box");
+const searchButton = document.getElementById("search-button");
+const characterContainer = document.getElementById("characters");
 
- if (!data.meals) {
- showMessage(`No characters named "${query}".`);
- return;
- }
+// Display messages
+const showMessage = (message) => {
+    characterContainer.innerHTML = "";
 
- characterContainer.textContent = "";
- data.meals.forEach((meal) => {
- const characterDiv = document.createElement("div");
- characterDiv.classList.add("character");
+    const heading = document.createElement("h2");
+    heading.textContent = message;
 
- const image = document.createElement("img");
- image.src = meal.strMealThumb;
- image.alt = meal.strMeal;
+    characterContainer.appendChild(heading);
+};
 
- const title = document.createElement("h3");
- title.textContent = meal.strMeal;
+// Search for a character
+const fetchCharacters = async (query) => {
 
- const area = document.createElement("p");
- area.textContent = meal.strArea;
+    showMessage("Searching for character...");
 
- const category = document.createElement("p");
- category.textContent = meal.strCategory;
+    try {
+        const params = new URLSearchParams({
+            action: "query",
+            generator: "categorymembers",
+            gcmtitle: "Category:Characters_(XC2)",
+            gcmtype: "page",
+            gcmlimit: "500",
+            prop: "extracts|pageimages",
+            exintro: "true",
+            explaintext: "true",
+            exchars: "500",
+            piprop: "thumbnail",
+            pithumbsize: "500",
+            format: "json",
+            origin: "*"
+        });
 
- characterDiv.append(image, title, area, category);
- characterContainer.appendChild(characterDiv);
- });
- } catch (error) {
- showMessage(`Error: ${error.message}`);
- }
- };
+        const response = await fetch(`${API_URL}?${params}`);
 
- searchButton.addEventListener("click", (e) => {
- e.preventDefault();
- const searchInput = searchBox.value.trim();
- if (!searchInput) {
- showMessage("Please type a character to search for.");
- return;
- }
- fetchCharacters(searchInput);
- });
+        if (!response.ok) {
+            throw new Error("Unable to connect to the wiki.");
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error.info);
+        }
+
+        if (!data.query || !data.query.pages) {
+            showMessage("No characters found.");
+            return;
+        }
+
+        const characters = Object.values(data.query.pages);
+
+        // Find matching character
+        const searchResults = characters.filter(character =>
+            character.title.toLowerCase() === query.toLowerCase()
+        );
+
+        if (searchResults.length === 0) {
+            showMessage(`No character found named "${query}".`);
+            return;
+        }
+
+        // Display matching character
+        displayCharacters(searchResults);
+
+    } catch (error) {
+        showMessage(`Error: ${error.message}`);
+    }
+};
+
+// Display character information
+const displayCharacters = (characters) => {
+
+    characterContainer.innerHTML = "";
+
+    characters.forEach(character => {
+
+        const characterDiv = document.createElement("div");
+        characterDiv.classList.add("character");
+
+        // Character portrait
+        const image = document.createElement("img");
+
+        image.classList.add("character-image");
+        image.alt = character.title;
+
+        if (character.thumbnail && character.thumbnail.source) {
+            image.src = character.thumbnail.source;
+            image.style.display = "block";
+        } else {
+            image.alt = "No portrait available";
+            image.src = "placeholder.png";
+        }
+
+        // Character name
+        const title = document.createElement("h3");
+        title.textContent = character.title;
+
+        // Character description
+        const description = document.createElement("p");
+        description.textContent =
+            character.extract || "No description available.";
+
+        characterDiv.append(image, title, description);
+
+        characterContainer.appendChild(characterDiv);
+    });
+};
+
+// Search button
+searchButton.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    const query = searchBox.value.trim();
+
+    if (!query) {
+        showMessage("Please enter a character name!");
+        return;
+    }
+
+    fetchCharacters(query);
+});
+
+// Allow Enter key to search
+searchBox.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        searchButton.click();
+    }
+});

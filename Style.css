@@ -30,13 +30,23 @@
  text-align: center;
  }
 
- .character-container {
- text-align: center;
- margin-top: 20px;
- display: grid;
- grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
- grid-gap: 40px;
- }
+.character-container {
+    text-align: center;
+    margin: 20px auto;
+    max-width: 900px;
+    width: 90%;
+
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 25px;
+}
+
+.character {
+    width: 280px;
+    padding: 20px;
+    border-radius: 10px;
+}
 
 .search-container {
     text-align: center;
@@ -64,14 +74,10 @@
     cursor: pointer;
  }
 
- .character{
-    padding: 20px;
-    border-radius: 10px;
- }
-
- .character-image{
-    width: 100px;
+.character-image {
+    width: 200px;
     height: 250px;
     object-fit: contain;
-    margin-bottom: 10px;
- }
+    display: block;
+    margin: 0 auto 15px;
+}
